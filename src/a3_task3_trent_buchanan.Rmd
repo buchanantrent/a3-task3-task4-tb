@@ -1,0 +1,101 @@
+---
+title: "a3_task3"
+author: "Trent Buchanan"
+date: "11/3/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(lubridate)
+library(kableExtra)
+```
+```{r}
+urchins <- read_csv(here("data", "urchins.csv"))
+```
+### **Section 1**
+
+Size comparisons, purple and red urchins
+
+#### i. **Exploratory Data Viz**
+
+**Histogram**
+
+```{r}
+urchins_clean <- urchins %>% 
+  clean_names()
+
+urchins_clean %>% 
+  ggplot(aes(x = size, fill = common_name))+
+  geom_histogram(bins = 30, color = "black", show.legend = FALSE) +
+  facet_wrap(~common_name) +
+  labs( x = "Diameter (cm)",
+        y = "Count",
+        title = "Distribution of purple and red urchin sizes")+
+  scale_fill_manual(values = c("purple", "red"))
+```
+
+**Boxplot**
+
+```{r}
+urchins_clean %>% 
+  ggplot(aes(x = common_name, y = size)) +
+  geom_boxplot() +
+  labs( x = "Common Name",
+        y = "Size (cm)",
+        title = "Distribution of red and purrple urchin sizes")
+```
+
+#### ii. **Descriptive Statistics Table**
+
+```{r}
+urchins_summary <- urchins_clean %>% 
+  group_by(common_name) %>% 
+  summarize(mean = mean(size), median = median(size), sd = sd(size), n = n())
+
+kbl(urchins_summary) %>% 
+  kable_styling()
+```
+
+#### iii. **Takeaways**
+
+Looking at the histograms, we see that the distribution of purple is urchins is right skewed, or positively skewed, while the red urchin data appears more normally distributed. Looking at the boxplots, this trend continues as both the purple and red urchin data have outliers skewing the data positively. However, the summary statistics table shows us that for both groups, the means are less than the medians. So, this means that they are not actually skewed to the right, but to the left, or negatively skewed. Additionally, the red urchin data has a larger standard deviation so we can expect a greater spread between the minimum and maximum observed values when compared to the purple urchin data. This difference in spread can be seen with the boxplots as well.
+
+Actual difference between means: -2.3067
+Percent difference between means: -51.6%
+
+Looking at the difference in means, we see that the red urchins are much larger on average in comparison to the purple urchins. This larger means may also explain, in part, the larger standard deviation for red urchins when compared to purple urchins. If red urchins can grow to larger sizes, more variance will most likely be observed in their sizes when compared to purple urchins who appear more limited in their size growth.
+
+
+### **Section 2**
+
+```{r}
+purple_urchins <- urchins_clean %>% 
+  filter(common_name == "Purple Urchin") %>% 
+  mutate(date_new = mdy(date)) %>% 
+  mutate(year = year(date_new)) %>% 
+  mutate( site_full = case_when(
+    site %in% c("NAPL") ~ "Naples Reef",
+    site %in% c("AQUE") ~ "Arroyo Quemado Reef",
+    site %in% c("CARP") ~ "Carpinteria Reef",
+    site %in% c("MOHK") ~ "Mohawk Reef",
+    site %in% c("IVEE") ~ "Isla Vista Reef"
+  ))
+
+purple_summary <- purple_urchins %>% 
+  count(site_full, year)
+
+purple_summary %>% 
+  ggplot(aes(x= year, y = n, fill = site_full)) +
+  geom_col(show.legend = FALSE, color = "black") +
+  facet_wrap(~site_full) +
+  labs(x = "Year",
+       y = "Count",
+       title = "Purple urchin counts across different sites")+
+   scale_fill_manual(values = c("red2", "orange", "yellow", "green2", "cyan"))
+  
+```
+

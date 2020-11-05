@@ -1,0 +1,85 @@
+---
+title: "a3_task4_trent_buchanan"
+author: "Trent Buchanan"
+date: "11/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(janitor)
+library(here)
+library(lubridate)
+library(kableExtra)
+```
+
+```{r}
+urchins <- read_csv(here("data", "urchins.csv"))
+```
+
+#### **a. Wrangling**
+
+```{r}
+urchins_clean <- urchins %>% 
+  clean_names()
+
+purple_urchins <- urchins_clean %>% 
+  filter(common_name == "Purple Urchin") %>% 
+  mutate(date_new = mdy(date)) %>% 
+  mutate(year = year(date_new)) %>%
+  mutate(month = month(date_new)) %>% 
+  mutate( site_full = case_when(
+    site %in% c("NAPL") ~ "Naples Reef",
+    site %in% c("AQUE") ~ "Arroyo Quemado Reef",
+    site %in% c("CARP") ~ "Carpinteria Reef",
+    site %in% c("MOHK") ~ "Mohawk Reef",
+    site %in% c("IVEE") ~ "Isla Vista Reef"
+  ))
+naples_reef_purple <- purple_urchins %>% 
+  filter(site_full == "Naples Reef") %>% 
+  filter(year == 2010) %>% 
+  filter(month == 1)
+```
+
+#### **b. Plotting**
+
+```{r}
+naples_reef_purple %>% 
+  ggplot(aes(x = size, fill = treatment))+
+  geom_histogram(bins = 15, color = "black", show.legend = FALSE) +
+  facet_wrap(~treatment) +
+  labs( x = "Diameter (cm)",
+        y = "Count",
+        title = "Distribution of Naples Reef urchin sizes based on treatment",
+        subtitle = "January 2010")+
+  scale_fill_manual(values = c("green3", "blue2"))
+```
+
+Looking at the histograms, neither distribution is normal. In fact, the control treatment distribution appears bimodal while the annual treatment distribution appears comb-like. 
+
+#### **c. Summary statistics**
+
+```{r}
+naples_summary <- naples_reef_purple %>% 
+  group_by(treatment) %>% 
+  summarize(mean = mean(size), median = median(size), sd = sd(size), n = n())
+kbl(naples_summary) %>% 
+  kable_styling()
+  
+```
+
+#### **d. Two-sample t-test**
+
+```{r}
+treatment_ttest <- t.test(size ~ treatment, data = naples_reef_purple)
+
+treatment_ttest
+```
+
+#### **e. T-test meaning**
+#### **f.**
+
+Mean urchin diameter for the ANNUAL treatment urchins (3.916667 $\pm$ 0.9662380 cm, n = 60) was only slightly larger than the mean diameter of the CONTROL urchins (3.725806 $\pm$ 0.8668646 cm, n = 62). This is a difference of just below 5% (values are mean $\pm$ 1 standard deviation; t(117.7) = 1.15, p = 0.25). Additionally, considering the p-value we received from the t-test, these two samples could possibly have been drawn from populations with the same mean urchin diameter, but it is still possible that the samples we examined are in fact from populations with different mean urchin diameters. 
+
+
